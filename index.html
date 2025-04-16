@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPU Scheduling Algorithm Visualizer</title>
+
+  <!-- Bootstrap & Fonts -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,400,700" />
+  <style>
+    body {
+      font-family: 'Lato', sans-serif;
+      background-color: #f4f4f4;
+    }
+    .form-section {
+      margin-bottom: 1.5rem;
+    }
+    #myChart {
+      background-color: #e3f2fd;
+      border-radius: 10px;
+    }
+    table th, table td {
+      vertical-align: middle !important;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-dark p-3">
+    <div class="container-fluid">
+      <span class="navbar-brand mb-0 h1">CPU Scheduling Algorithm Visualizer</span>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <h3 class="text-center mb-4">Select Your CPU Algorithm</h3>
+    <div class="form-section">
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="algorithm" id="FCFS">
+        <label class="form-check-label" for="FCFS">FCFS (First Come First Serve)</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="algorithm" id="SJF">
+        <label class="form-check-label" for="SJF">SJF (Shortest Job First)</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="algorithm" id="RR">
+        <label class="form-check-label" for="RR">RRS (Round Robin)</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="algorithm" id="PR">
+        <label class="form-check-label" for="PR">Priority CPU Scheduling</label>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label for="arrivalTime" class="form-label">Arrival Time</label>
+        <input type="number" id="arrivalTime" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label for="burstTime" class="form-label">Burst Time</label>
+        <input type="number" id="burstTime" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label for="priority" class="form-label">Priority (Optional)</label>
+        <input type="number" id="priority" class="form-control">
+      </div>
+    </div>
+
+    <div class="mb-4 text-center">
+      <button class="btn btn-primary me-2" onclick="addTask()">Add Task</button>
+      <button class="btn btn-danger" onclick="clearTasks()">Clear Tasks</button>
+    </div>
+
+    <div class="table-responsive mb-4">
+      <table class="table table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>Process</th>
+            <th>Arrival Time</th>
+            <th>Burst Time</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody id="taskTable"></tbody>
+      </table>
+    </div>
+
+    <div class="text-center mb-4">
+      <button class="btn btn-success" onclick="runScheduler()">Run Scheduler</button>
+    </div>
+
+    <div>
+      <canvas id="myChart" width="800" height="400"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const tasks = [];
+
+    function addTask() {
+      const at = parseInt(document.getElementById('arrivalTime').value);
+      const bt = parseInt(document.getElementById('burstTime').value);
+      const pr = parseInt(document.getElementById('priority').value);
+      if (!isNaN(at) && !isNaN(bt)) {
+        const id = tasks.length + 1;
+        tasks.push({ id, at, bt, pr });
+        renderTable();
+        document.getElementById('arrivalTime').value = '';
+        document.getElementById('burstTime').value = '';
+        document.getElementById('priority').value = '';
+      }
+    }
+
+    function clearTasks() {
+      tasks.length = 0;
+      renderTable();
+      const chart = Chart.getChart('myChart');
+      if (chart) chart.destroy();
+    }
+
+    function renderTable() {
+      const table = document.getElementById('taskTable');
+      table.innerHTML = '';
+      for (const task of tasks) {
+        table.innerHTML += `<tr>
+          <td>P${task.id}</td>
+          <td>${task.at}</td>
+          <td>${task.bt}</td>
+          <td>${isNaN(task.pr) ? '-' : task.pr}</td>
+        </tr>`;
+      }
+    }
+
+    function runScheduler() {
+  if (!tasks.length) return alert('Add some tasks first');
+  const ctx = document.getElementById('myChart').getContext('2d');
+
+  const labels = tasks.map(task => 'P' + task.id);
+  const durations = tasks.map(task => task.bt);
+
+  const chart = Chart.getChart('myChart');
+  if (chart) chart.destroy();
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Burst Time',
+        data: durations,
+        fill: false,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: 'blue',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        },
+        title: {
+          display: true,
+          text: 'Burst Time Line Graph'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Time Units'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Processes'
+          }
+        }
+      }
+    }
+  });
+}
+
+  </script>
+</body>
+</html>
